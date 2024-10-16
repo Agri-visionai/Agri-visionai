@@ -2,9 +2,10 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS  # Import CORS
 import pickle
 import pandas as pd
+import os  # Import os for environment variables
 
 # Initialize Flask app
-app = Flask(__name__)  # Corrected here
+app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Load the trained model and feature columns
@@ -49,4 +50,5 @@ def predict():
     return jsonify({'predicted_yield': prediction[0]})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Run the app on host 0.0.0.0 and port from the environment or default to 5000
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=True)
