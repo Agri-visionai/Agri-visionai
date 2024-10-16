@@ -1,16 +1,19 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS
 import pickle
 import pandas as pd
-import os  # Import os for environment variables
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
 # Load the trained model and feature columns
 model = pickle.load(open('model.pkl', 'rb'))
-model_features = pickle.load(open('model_features.pkl', 'rb'))  # Load the model features
+model_features = pickle.load(open('model_features.pkl', 'rb'))
+
+@app.route('/')
+def index():
+    return "Welcome to the Agri-Vision AI Prediction API! Use the /predict endpoint to get predictions."
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -50,5 +53,4 @@ def predict():
     return jsonify({'predicted_yield': prediction[0]})
 
 if __name__ == '__main__':
-    # Run the app on host 0.0.0.0 and port from the environment or default to 5000
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=True)
+    app.run(debug=True)
