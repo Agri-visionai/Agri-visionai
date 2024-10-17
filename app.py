@@ -26,11 +26,7 @@ def predict():
     irrigation_used = data.get('Irrigation_Used') or data.get('irrigation_used')
     weather_condition = data.get('Weather_Condition') or data.get('weather_condition')
     days_to_harvest = data.get('Days_to_Harvest') or data.get('days_to_harvest')
-
-    # Validate that all necessary fields are provided
-    if not all([region, soil_type, crop, rainfall_mm, temperature_celsius, weather_condition, days_to_harvest]):
-        return jsonify({'error': 'Missing required data. Please ensure all fields are filled.'}), 400
-
+    
     # Prepare the data for prediction
     input_data = pd.DataFrame({
         'Region': [region],
@@ -49,11 +45,9 @@ def predict():
     input_data_encoded = input_data_encoded.reindex(columns=model_features, fill_value=0)
 
     # Make the prediction
-    try:
-        prediction = model.predict(input_data_encoded)
-        return jsonify({'predicted_yield': prediction[0]})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    prediction = model.predict(input_data_encoded)
+
+    return jsonify({'predicted_yield': prediction[0]})
 
 if __name__ == '__main__':
     # Run the app on host 0.0.0.0 and port from the environment or default to 5000
