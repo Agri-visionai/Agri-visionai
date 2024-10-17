@@ -1,35 +1,36 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS  # Import CORS
 import pickle
 import pandas as pd
+import os  # Import os for environment variables
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Enable CORS for all routes
 
 # Load the trained model and feature columns
 model = pickle.load(open('model.pkl', 'rb'))
-model_features = pickle.load(open('model_features.pkl', 'rb'))
-
-@app.route('/')
-def index():
-    return "Welcome to the Agri-Vision AI Prediction API! Use the /predict endpoint to get predictions."
+model_features = pickle.load(open('model_features.pkl', 'rb'))  # Load the model features
 
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.json
     
-    # Extract data from the request
-    region = data['Region']
-    soil_type = data['Soil_Type']
-    crop = data['Crop']
-    rainfall_mm = data['Rainfall_mm']
-    temperature_celsius = data['Temperature_Celsius']
-    fertilizer_used = data['Fertilizer_Used']
-    irrigation_used = data['Irrigation_Used']
-    weather_condition = data['Weather_Condition']
-    days_to_harvest = data['Days_to_Harvest']
-    
+    # Safely access the keys using .get() and account for possible variations in naming
+    region = data.get('Region') or data.get('region')
+    soil_type = data.get('Soil_Type') or data.get('soil_type')
+    crop = data.get('Crop') or data.get('crop')
+    rainfall_mm = data.get('Rainfall_mm') or data.get('rainfall_mm')
+    temperature_celsius = data.get('Temperature_Celsius') or data.get('temperature_celsius')
+    fertilizer_used = data.get('Fertilizer_Used') or data.get('fertilizer_used')
+    irrigation_used = data.get('Irrigation_Used') or data.get('irrigation_used')
+    weather_condition = data.get('Weather_Condition') or data.get('weather_condition')
+    days_to_harvest = data.get('Days_to_Harvest') or data.get('days_to_harvest')
+
+    # Validate that all necessary fields are provided
+    if not all([region, soil_type, crop, rainfall_mm, temperature_celsius, weather_condition, days_to_harvest]):
+        return jsonify({'error': 'Missing required data. Please ensure all fields are filled.'}), 400
+
     # Prepare the data for prediction
     input_data = pd.DataFrame({
         'Region': [region],
@@ -48,9 +49,12 @@ def predict():
     input_data_encoded = input_data_encoded.reindex(columns=model_features, fill_value=0)
 
     # Make the prediction
-    prediction = model.predict(input_data_encoded)
-
-    return jsonify({'predicted_yield': prediction[0]})
+    try:
+        prediction = model.predict(input_data_encoded)
+        return jsonify({'predicted_yield': prediction[0]})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Run the app on host 0.0.0.0 and port from the environment or default to 5000
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)), debug=True)
